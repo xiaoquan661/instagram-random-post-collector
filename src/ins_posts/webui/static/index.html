@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Ins Posts · 本地采集台</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="返回采集台首页">
+        <span class="brand-mark" aria-hidden="true">IP</span>
+        <span>
+          <strong>Ins Posts</strong>
+          <small>本地采集台</small>
+        </span>
+      </a>
+
+      <p class="nav-label">工作区域</p>
+      <nav class="side-nav" aria-label="页面导航">
+        <a class="nav-item active" href="#collector-title" aria-current="page">
+          <span aria-hidden="true">◇</span>采集任务
+        </a>
+        <a class="nav-item" href="#filter-section">
+          <span aria-hidden="true">⌁</span>结果筛选
+        </a>
+        <a class="nav-item" href="#results-section">
+          <span aria-hidden="true">▤</span>采集结果
+        </a>
+      </nav>
+
+      <div class="sidebar-meta">
+        <span class="status-dot" aria-hidden="true"></span>
+        <p><strong>本地服务</strong><small>127.0.0.1 · 独立运行</small></p>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div>
+          <p class="breadcrumb">工作台 · 当前任务</p>
+          <h1>采集工作台</h1>
+          <p>发现、筛选并保存公开的 Instagram 帖子。</p>
+        </div>
+        <div class="security-pill">
+          <span class="status-dot" aria-hidden="true"></span>
+          本地服务正常
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="page-title">
+          <div class="hero-content">
+            <p class="eyebrow">LOCAL COLLECTOR · SAME ORIGIN</p>
+            <h2 id="page-title"><span>随机发现</span><br>公开帖子采集台</h2>
+            <p class="hero-copy">无需输入账号或 URL。选择范围后，系统会从公共主题池抽样，并在本机完成筛选与媒体保存。</p>
+            <a class="hero-link" href="#collector-title">创建采集任务 <span aria-hidden="true">→</span></a>
+          </div>
+          <div class="hero-stats" aria-label="默认采集设置">
+            <div>
+              <span><i class="dot violet" aria-hidden="true"></i>默认模式</span>
+              <strong>随机发现</strong>
+            </div>
+            <div>
+              <span><i class="dot green" aria-hidden="true"></i>请求间隔</span>
+              <strong>6–12 秒</strong>
+            </div>
+            <div>
+              <span><i class="dot amber" aria-hidden="true"></i>任务队列</span>
+              <strong>单任务</strong>
+            </div>
+          </div>
+        </section>
+
+        <div class="system-strip" aria-label="本地服务信息">
+          <div><span>运行位置</span><strong>127.0.0.1</strong></div>
+          <div><span>数据范围</span><strong>公开帖子</strong></div>
+          <div><span>登录方式</span><strong>浏览器会话</strong></div>
+          <div><span>媒体格式</span><strong>原始图片 / 视频</strong></div>
+        </div>
+
+        <div id="fatal-message" class="notice notice-error" role="alert" hidden></div>
+
+        <div class="workspace-grid">
+        <section class="panel form-panel" aria-labelledby="collector-title">
+          <div class="section-heading">
+            <div>
+              <p class="step-label">01 · 采集范围</p>
+              <h2 id="collector-title">新建任务</h2>
+            </div>
+            <span class="required-note">默认无需账号或 URL</span>
+          </div>
+
+          <form id="job-form" novalidate>
+            <fieldset class="mode-switch">
+              <legend>采集方式</legend>
+              <label class="mode-card">
+                <input type="radio" name="mode" value="random" checked>
+                <span>
+                  <strong>随机发现</strong>
+                  <small>无需账号或 URL</small>
+                </span>
+              </label>
+              <label class="mode-card">
+                <input type="radio" name="mode" value="target">
+                <span>
+                  <strong>指定目标</strong>
+                  <small>高级模式</small>
+                </span>
+              </label>
+            </fieldset>
+
+            <section id="random-panel" class="mode-panel" aria-labelledby="random-panel-title">
+              <div class="mode-explainer">
+                <strong id="random-panel-title">从内置公共主题池抽样</strong>
+                <p>程序会随机选择多个公共 Hashtag 来源，合并去重、按条件筛选，再随机打散结果。这不是对 Instagram 全站帖子的均匀随机抽样。</p>
+              </div>
+              <div class="two-columns">
+                <label class="field">
+                  <span>探索范围</span>
+                  <select id="discovery-breadth" name="discovery_breadth">
+                    <option value="quick">快速 · 2 个随机来源</option>
+                    <option value="standard" selected>标准 · 4 个随机来源</option>
+                    <option value="wide">更广 · 8 个随机来源</option>
+                  </select>
+                  <small>范围越广，耗时越长，也更容易得到多样结果。</small>
+                </label>
+                <label class="field">
+                  <span>希望得到多少条</span>
+                  <input id="discovery-result-count" name="discovery_result_count" type="number"
+                    min="1" max="50" value="20" required>
+                  <small>去重和筛选后随机保留，最多 50 条。</small>
+                </label>
+              </div>
+            </section>
+
+            <section id="target-panel" class="mode-panel" aria-labelledby="target-panel-title" hidden>
+              <div class="mode-explainer compact">
+                <strong id="target-panel-title">采集指定目标</strong>
+                <p>适合需要固定账号、单篇帖子、Reel 或 Hashtag 页面的高级任务。</p>
+              </div>
+              <label class="field field-wide">
+                <span>账号、帖子或 Hashtag URL *</span>
+                <input id="target" name="target" type="text" maxlength="500"
+                  placeholder="例如 nasa、@nasa 或 instagram.com/p/…"
+                  autocomplete="off" spellcheck="false" disabled>
+                <small>支持用户名，以及帖子、Reel、Instagram Hashtag 页面 URL。</small>
+              </label>
+
+              <div class="two-columns">
+                <label class="field">
+                  <span>每类扫描上限</span>
+                  <input id="max-posts" name="max_posts" type="number" min="1" max="1000"
+                    value="20" required disabled>
+                  <small>筛选前计数；帖子和 Reels 分别计算。</small>
+                </label>
+              </div>
+
+              <fieldset class="choice-group">
+                <legend>内容类型</legend>
+                <label class="check-card">
+                  <input id="include-posts" name="include" type="checkbox" value="posts" checked disabled>
+                  <span><strong>帖子</strong><small>图片、视频与轮播</small></span>
+                </label>
+                <label class="check-card">
+                  <input id="include-reels" name="include" type="checkbox" value="reels" disabled>
+                  <span><strong>Reels</strong><small>短视频内容</small></span>
+                </label>
+              </fieldset>
+            </section>
+
+            <div class="two-columns">
+              <label class="field">
+                <span>认证方式</span>
+                <select id="authentication" name="authentication">
+                  <option value="anonymous">匿名访问</option>
+                </select>
+                <small>如需登录态，推荐先在 Firefox 登录。</small>
+              </label>
+
+              <label class="field">
+                <span>请求间隔</span>
+                <input id="request-delay" name="request_delay" type="text" value="6-12" maxlength="20" inputmode="decimal">
+                <small>秒数或范围，下限不得低于 1 秒。</small>
+              </label>
+            </div>
+
+            <label class="toggle-row">
+              <span>
+                <strong>下载命中媒体</strong>
+                <small>命中帖子中的全部媒体</small>
+              </span>
+              <input id="download-media" name="download_media" type="checkbox" role="switch">
+            </label>
+
+            <details id="filter-section" class="filter-box" open>
+              <summary>
+                <span>
+                  <span class="step-label">02 · 结果筛选</span>
+                  <strong>设置命中条件</strong>
+                </span>
+                <span class="summary-hint">可选</span>
+              </summary>
+              <p id="filter-help" class="filter-help">先从随机来源收集候选帖子，再按条件保留并打散结果。不同类别的条件之间按“并且”处理。</p>
+
+              <div class="two-columns">
+                <label class="field">
+                  <span>开始日期</span>
+                  <input id="since" name="since" type="date">
+                </label>
+                <label class="field">
+                  <span>结束日期</span>
+                  <input id="until" name="until" type="date">
+                </label>
+              </div>
+              <p class="filter-help">日期按帖子 UTC 日期判断。</p>
+
+              <div class="two-columns">
+                <label class="field">
+                  <span>最低点赞数</span>
+                  <input id="min-likes" name="min_likes" type="number" min="0" placeholder="不限">
+                </label>
+                <label class="field">
+                  <span>最高点赞数</span>
+                  <input id="max-likes" name="max_likes" type="number" min="0" placeholder="不限">
+                </label>
+              </div>
+              <p class="filter-help">隐藏点赞数与真实 0 赞无法区分；启用点赞条件时会保守排除这两种 0 值。</p>
+
+              <div class="compound-field">
+                <label class="field grow">
+                  <span>文案关键词</span>
+                  <input id="keywords" name="keywords" type="text" maxlength="2048" placeholder="新品, 上海, summer">
+                  <small>逗号分隔，按字面匹配，不使用正则表达式。</small>
+                </label>
+                <label class="mini-field">
+                  <span>命中方式</span>
+                  <select id="keyword-mode" name="keyword_mode">
+                    <option value="any">任意一个</option>
+                    <option value="all">全部</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="compound-field">
+                <label class="field grow">
+                  <span>Hashtag</span>
+                  <input id="hashtags" name="hashtags" type="text" maxlength="2048" placeholder="#design, #travel">
+                  <small>逗号分隔，# 可省略，不区分大小写。</small>
+                </label>
+                <label class="mini-field">
+                  <span>命中方式</span>
+                  <select id="hashtag-mode" name="hashtag_mode">
+                    <option value="any">任意一个</option>
+                    <option value="all">全部</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="filter-final-grid" class="two-columns single-column">
+                <label class="field">
+                  <span>媒体类型</span>
+                  <select id="media-type" name="media_type">
+                    <option value="all">全部类型</option>
+                    <option value="image">包含图片</option>
+                    <option value="video">包含视频</option>
+                  </select>
+                </label>
+                <label id="target-max-results-field" class="field" hidden>
+                  <span>结果上限</span>
+                  <input id="max-results" name="max_results" type="number" min="1" max="1000"
+                    placeholder="全部命中结果" disabled>
+                  <small>帖子和 Reels 合并后按发布时间取最新结果。</small>
+                </label>
+              </div>
+
+            </details>
+
+            <div id="form-error" class="notice notice-error" role="alert" hidden></div>
+            <button id="submit-job" class="primary-button" type="submit">
+              <span id="submit-label">随机采一批</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <p class="terms-note">请只采集你有权访问和使用的内容。遇到登录验证、429 或 challenge 时，工具会保守停止。</p>
+          </form>
+        </section>
+
+        <aside class="panel status-panel" aria-labelledby="status-title">
+          <div class="section-heading">
+            <div>
+              <p class="step-label">03 · 任务状态</p>
+              <h2 id="status-title">等待开始</h2>
+            </div>
+            <span id="job-status" class="job-badge idle">空闲</span>
+          </div>
+
+          <div id="progress-track" class="progress-track" aria-hidden="true">
+            <span></span>
+          </div>
+          <p id="phase-text" class="phase-text" aria-live="polite">填写左侧表单后开始采集。</p>
+
+          <dl class="metric-grid">
+            <div><dt>扫描</dt><dd id="metric-scanned">—</dd></div>
+            <div><dt>命中</dt><dd id="metric-matched">—</dd></div>
+            <div><dt>新增</dt><dd id="metric-new">—</dd></div>
+            <div><dt>已保存</dt><dd id="metric-stored">—</dd></div>
+          </dl>
+
+          <div id="job-message" class="notice" role="status" hidden></div>
+
+          <button id="open-output" class="secondary-button" type="button" disabled>
+            打开输出文件夹
+          </button>
+
+          <details class="log-box">
+            <summary>运行日志 <span id="log-count">0</span></summary>
+            <pre id="job-log" tabindex="0">尚无日志。</pre>
+          </details>
+
+          <div class="local-facts">
+            <div><span aria-hidden="true">01</span><p><strong>本机端口</strong><small>只监听 127.0.0.1</small></p></div>
+            <div><span aria-hidden="true">02</span><p><strong>单任务</strong><small>避免同会话并发触发风控</small></p></div>
+            <div><span aria-hidden="true">03</span><p><strong>独立目录</strong><small>每次任务使用唯一输出目录</small></p></div>
+          </div>
+        </aside>
+        </div>
+
+        <section id="results-section" class="panel results-panel" aria-labelledby="results-title" hidden>
+        <div class="section-heading results-heading">
+          <div>
+            <p class="step-label">04 · 本次结果</p>
+            <h2 id="results-title">本次随机结果</h2>
+          </div>
+          <p id="results-count" class="results-count">0 条</p>
+        </div>
+        <div id="results-empty" class="empty-state" hidden>
+          <strong>没有符合条件的帖子</strong>
+          <p id="results-empty-copy">可以选择更广的探索范围，或放宽日期、点赞、关键词等筛选条件。</p>
+        </div>
+        <div id="results-list" class="results-list"></div>
+        <nav class="pagination" aria-label="结果分页">
+          <button id="previous-page" class="text-button" type="button" disabled>← 上一页</button>
+          <span id="page-label">第 1 页</span>
+          <button id="next-page" class="text-button" type="button" disabled>下一页 →</button>
+        </nav>
+        </section>
+      </main>
+
+      <footer>
+        <span>Ins Posts Local UI</span>
+        <span>数据只保存在本机任务目录</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

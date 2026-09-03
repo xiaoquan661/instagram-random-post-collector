@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ins-posts"
+version = "0.4.1"
+description = "A local Instagram post filtering and media collector backed by gallery-dl"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Codex" }]
+dependencies = [
+  "gallery-dl==1.32.10",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10",
+]
+
+[project.scripts]
+ins-posts = "ins_posts.collector.cli:main"
+ins-posts-ui = "ins_posts.webui.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"ins_posts.webui" = ["static/*.html", "static/*.css", "static/*.js"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]

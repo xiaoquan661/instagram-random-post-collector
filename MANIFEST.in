@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+include docs/research.md
+include start-ui.cmd
+include 启动界面.cmd
+recursive-include src/ins_posts/webui/static *.css *.html *.js
