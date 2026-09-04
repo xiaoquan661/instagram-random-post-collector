@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import importlib.util
+import io
 import json
 import os
 import random
@@ -665,9 +667,9 @@ def _run_exact_downloads(
     return 0, "\n".join(logs), attempted
 
 
-def _atomic_text(path: Path, text: str) -> None:
+def _atomic_text(path: Path, text: str, *, encoding: str = "utf-8") -> None:
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(text, encoding="utf-8", newline="\n")
+    temporary.write_text(text, encoding=encoding, newline="\n")
     os.replace(temporary, path)
 
 
@@ -691,6 +693,73 @@ def _write_jsonl(path: Path, records: Sequence[dict[str, Any]]) -> None:
         for record in records
     )
     _atomic_text(path, content)
+
+
+CSV_COLUMNS = (
+    "标题",
+    "正文",
+    "账号",
+    "发布时间",
+    "帖子链接",
+    "帖子ID",
+    "点赞数",
+    "评论数",
+    "浏览数",
+    "播放数",
+    "Hashtag",
+    "媒体类型",
+    "媒体链接",
+)
+
+
+def _csv_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        return " ".join(str(item) for item in value if item is not None)
+    return str(value)
+
+
+def _post_csv_row(post: dict[str, Any]) -> dict[str, str]:
+    media_types: list[str] = []
+    media_urls: list[str] = []
+    for media in post.get("media") or []:
+        if not isinstance(media, dict):
+            continue
+        media_type = _csv_value(media.get("media_type"))
+        if media_type:
+            media_types.append(media_type)
+        media_url = (
+            media.get("video_url")
+            if media_type == "video"
+            else media.get("display_url")
+        ) or media.get("url")
+        if media_url:
+            media_urls.append(str(media_url))
+    return {
+        "标题": _csv_value(post.get("title")),
+        "正文": _csv_value(post.get("body") or post.get("caption")),
+        "账号": _csv_value(post.get("username")),
+        "发布时间": _csv_value(post.get("published_at")),
+        "帖子链接": _csv_value(post.get("post_url")),
+        "帖子ID": _csv_value(post.get("post_id")),
+        "点赞数": _csv_value(post.get("like_count")),
+        "评论数": _csv_value(post.get("comment_count")),
+        "浏览数": _csv_value(post.get("view_count")),
+        "播放数": _csv_value(post.get("play_count")),
+        "Hashtag": _csv_value(post.get("hashtags")),
+        "媒体类型": " | ".join(media_types),
+        "媒体链接": "\n".join(media_urls),
+    }
+
+
+def _write_csv(path: Path, records: Sequence[dict[str, Any]]) -> None:
+    """Write a Windows-friendly spreadsheet with explicit title/body columns."""
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=CSV_COLUMNS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(_post_csv_row(record) for record in records)
+    _atomic_text(path, buffer.getvalue(), encoding="utf-8-sig")
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -947,11 +1016,13 @@ def run(args: argparse.Namespace) -> int:
     posts_path = output / "posts.jsonl"
     try:
         _write_jsonl(output / "current.jsonl", current)
+        _write_csv(output / "current.csv", current)
         previous = [] if args.replace else _read_jsonl(posts_path)
         stored, new_count = merge_posts(
             previous, current, preserve_missing=bool(errors)
         )
         _write_jsonl(posts_path, stored)
+        _write_csv(output / "posts.csv", stored)
     except (CollectorError, OSError, ValueError) as exc:
         _try_write_json(
             output / "run.json",

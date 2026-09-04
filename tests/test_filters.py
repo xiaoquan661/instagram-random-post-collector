@@ -118,6 +118,23 @@ def test_keywords_use_nfkc_casefold_with_any_and_all_modes():
     assert rejected == {"keywords": 1}
 
 
+def test_keywords_match_title_and_body_fields():
+    post = _post(
+        "structured-content",
+        title="新品发布",
+        body="完整正文包含上海线下活动信息",
+        caption="",
+    )
+
+    matched, rejected = apply_filters(
+        [post],
+        FilterSpec.from_values(keywords="新品,上海", keyword_mode="all"),
+    )
+
+    assert _ids(matched) == ["structured-content"]
+    assert rejected == {}
+
+
 def test_hashtags_match_exact_normalized_tags_in_any_and_all_modes():
     post = _post("tags", hashtags=["#Travel", "#上海", "#AI"])
 

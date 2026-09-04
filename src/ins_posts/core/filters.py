@@ -181,8 +181,12 @@ def _mismatch_reason(post: dict[str, Any], spec: FilterSpec) -> str | None:
             return "likes_above_max"
 
     if spec.keywords:
-        caption = _normalized_text(str(post.get("caption") or ""))
-        checks = (keyword in caption for keyword in spec.keywords)
+        content = _normalized_text(
+            "\n".join(
+                str(post.get(name) or "") for name in ("title", "body", "caption")
+            )
+        )
+        checks = (keyword in content for keyword in spec.keywords)
         if not (all(checks) if spec.keyword_mode == "all" else any(checks)):
             return "keywords"
 

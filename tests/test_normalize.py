@@ -61,11 +61,62 @@ def test_normalizes_carousel_and_merges_video_preview():
     assert len(posts) == 1
     post = posts[0]
     assert post["post_id"] == "100"
+    assert post["schema_version"] == 2
+    assert post["title"] == "A caption #Demo"
+    assert post["body"] == "A caption #Demo"
+    assert post["caption"] == post["body"]
     assert post["published_at"] == "2026-08-30T12:34:56Z"
     assert post["hashtags"] == ["#Demo"]
     assert post["media_count"] == 2
     assert post["media"][1]["media_type"] == "video"
     assert post["media"][1]["video_url"] == "https://cdn.example/two.mp4"
+
+
+def test_extracts_explicit_title_body_accessibility_and_engagement():
+    events = [
+        [
+            2,
+            {
+                "post_id": "200",
+                "title": "官方标题",
+                "description": "第一行正文。\n第二行保留。",
+                "accessibility_caption": "图片中是一片海滩",
+                "comments_count": 12,
+                "video_view_count": 345,
+                "play_count": 456,
+            },
+        ]
+    ]
+
+    posts, errors = normalize_events(events)
+
+    assert errors == []
+    assert posts[0]["title"] == "官方标题"
+    assert posts[0]["body"] == "第一行正文。\n第二行保留。"
+    assert posts[0]["accessibility_text"] == "图片中是一片海滩"
+    assert posts[0]["comment_count"] == 12
+    assert posts[0]["view_count"] == 345
+    assert posts[0]["play_count"] == 456
+
+
+def test_derives_and_limits_title_from_first_body_line():
+    long_first_line = "这是一段很长的标题" * 20
+    posts, _ = normalize_events(
+        [[2, {"post_id": "300", "description": f"{long_first_line}\n正文第二行"}]]
+    )
+
+    assert len(posts[0]["title"]) == 120
+    assert posts[0]["title"].endswith("…")
+    assert posts[0]["body"].endswith("正文第二行")
+
+
+def test_derived_title_stops_after_first_sentence():
+    posts, _ = normalize_events(
+        [[2, {"post_id": "301", "description": "第一句。第二句继续说明"}]]
+    )
+
+    assert posts[0]["title"] == "第一句。"
+    assert posts[0]["body"] == "第一句。第二句继续说明"
 
 
 def test_collects_upstream_error():
@@ -155,6 +206,9 @@ def test_partial_merge_preserves_missing_fields_and_media():
 
     assert new_count == 0
     assert merged[0]["caption"] == "complete caption"
+    assert merged[0]["body"] == "complete caption"
+    assert merged[0]["title"] == "complete caption"
+    assert merged[0]["schema_version"] == 2
     assert merged[0]["location"]["id"] == "99"
     assert [item["media_id"] for item in merged[0]["media"]] == ["11", "12"]
     assert merged[0]["media"][0]["display_url"] == "new-one"

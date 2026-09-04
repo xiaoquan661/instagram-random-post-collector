@@ -34,7 +34,7 @@ if not exist "!INS_POSTS_RUNTIME!\Scripts\python.exe" (
 )
 
 echo [2/3] Checking dependencies...
-"!INS_POSTS_RUNTIME!\Scripts\python.exe" -c "import importlib.metadata as m; import ins_posts.webui.server; assert m.version('ins-posts') == '0.4.1'; assert m.version('gallery-dl') == '1.32.10'" >nul 2>&1
+"!INS_POSTS_RUNTIME!\Scripts\python.exe" -c "import importlib.metadata as m; import ins_posts.webui.server; assert m.version('ins-posts') == '0.5.1'; assert m.version('gallery-dl') == '1.32.10'" >nul 2>&1
 if errorlevel 1 (
   echo       Installing dependencies. The first run needs internet access...
   "!INS_POSTS_RUNTIME!\Scripts\python.exe" -m pip install --upgrade .

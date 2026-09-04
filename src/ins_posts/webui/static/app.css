@@ -1042,6 +1042,11 @@ input::placeholder {
   font-size: 8px;
 }
 
+.result-author {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
 .result-title {
   display: inline-block;
   max-width: 100%;
@@ -1065,6 +1070,37 @@ input::placeholder {
   line-height: 1.55;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+}
+
+.body-details {
+  margin: -2px 0 9px;
+  color: var(--accent-dark);
+  font-size: 8px;
+}
+
+.body-details summary {
+  width: fit-content;
+  padding: 2px 0;
+  list-style: none;
+  font-weight: 700;
+}
+
+.body-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.body-full {
+  max-height: 220px;
+  overflow: auto;
+  margin: 6px 0 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #555a67;
+  background: var(--surface-soft);
+  font-size: 9px;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .tag-list {

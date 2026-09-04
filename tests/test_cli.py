@@ -1,4 +1,6 @@
 import argparse
+import csv
+import io
 import json
 
 import pytest
@@ -327,6 +329,40 @@ def test_result_limit_keeps_newest_across_combined_sources(tmp_path, monkeypatch
     assert current["post_id"] == "new"
     assert summary["matched_before_limit"] == 2
     assert summary["result_limit_reached"] is True
+
+
+def test_csv_output_is_windows_friendly_and_contains_body(tmp_path, monkeypatch):
+    events = [
+        [
+            2,
+            {
+                "post_id": "cn-1",
+                "post_shortcode": "CN1",
+                "post_url": "https://www.instagram.com/p/CN1/",
+                "username": "example",
+                "description": "这是正文第一行。\n这是正文第二行。",
+                "likes": 9,
+            },
+        ]
+    ]
+    args = cli.build_parser().parse_args(
+        ["instagram", "--output", str(tmp_path)]
+    )
+    monkeypatch.setattr(cli, "_run_metadata", lambda *_, **__: (events, ""))
+
+    assert cli.run(args) == 0
+    current_csv = tmp_path / "current.csv"
+    posts_csv = tmp_path / "posts.csv"
+    assert current_csv.read_bytes().startswith(b"\xef\xbb\xbf")
+    assert posts_csv.read_bytes().startswith(b"\xef\xbb\xbf")
+    rows = list(
+        csv.DictReader(
+            io.StringIO(current_csv.read_text(encoding="utf-8-sig"), newline="")
+        )
+    )
+    assert rows[0]["标题"] == "这是正文第一行。"
+    assert rows[0]["正文"] == "这是正文第一行。\n这是正文第二行。"
+    assert rows[0]["账号"] == "example"
 
 
 def test_no_target_defaults_to_random_filter_then_shuffle(tmp_path, monkeypatch):

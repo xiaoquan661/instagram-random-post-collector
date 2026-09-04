@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ins-posts"
-version = "0.4.1"
+version = "0.5.1"
 description = "A local Instagram post filtering and media collector backed by gallery-dl"
 readme = "README.md"
 requires-python = ">=3.10"

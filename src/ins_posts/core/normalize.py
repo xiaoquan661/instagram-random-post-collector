@@ -11,6 +11,8 @@ from typing import Any
 DIRECTORY_MESSAGE = 2
 URL_MESSAGE = 3
 ERROR_MESSAGE = -1
+SCHEMA_VERSION = 2
+TITLE_MAX_LENGTH = 120
 
 
 def _text(value: Any) -> str | None:
@@ -27,6 +29,27 @@ def _integer(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _first_value(metadata: dict[str, Any], *names: str) -> Any:
+    for name in names:
+        value = metadata.get(name)
+        if value is not None:
+            return value
+    return None
+
+
+def _content_title(metadata: dict[str, Any], body: str) -> str:
+    explicit = _text(_first_value(metadata, "title", "headline"))
+    source = explicit or next(
+        (line.strip() for line in body.splitlines() if line.strip()), ""
+    )
+    source = re.sub(r"\s+", " ", source).strip()
+    if not explicit:
+        source = re.split(r"(?<=[.!?。！？])", source, maxsplit=1)[0]
+    if len(source) <= TITLE_MAX_LENGTH:
+        return source
+    return source[: TITLE_MAX_LENGTH - 1].rstrip() + "…"
 
 
 def _utc_string(value: Any) -> str | None:
@@ -86,7 +109,7 @@ def _merge_string_lists(previous: Iterable[Any], current: Iterable[Any]) -> list
 
 
 def _new_post(metadata: dict[str, Any], fetched_at: str) -> dict[str, Any]:
-    caption = _text(metadata.get("description")) or ""
+    body = _text(_first_value(metadata, "description", "caption", "text")) or ""
     location = {
         "id": _text(metadata.get("location_id")),
         "slug": _text(metadata.get("location_slug")),
@@ -96,7 +119,7 @@ def _new_post(metadata: dict[str, Any], fetched_at: str) -> dict[str, Any]:
         location = None
 
     return {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "platform": "instagram",
         "post_id": _text(metadata.get("post_id") or metadata.get("sidecar_media_id")),
         "shortcode": _text(
@@ -114,10 +137,27 @@ def _new_post(metadata: dict[str, Any], fetched_at: str) -> dict[str, Any]:
         "owner_id": _text(metadata.get("owner_id")),
         "full_name": _text(metadata.get("fullname")),
         "published_at": _utc_string(metadata.get("post_date") or metadata.get("date")),
-        "caption": caption,
-        "hashtags": _hashtags(metadata, caption),
+        "title": _content_title(metadata, body),
+        "body": body,
+        "caption": body,
+        "accessibility_text": _text(
+            _first_value(
+                metadata,
+                "accessibility_caption",
+                "accessibility_text",
+                "alt_text",
+            )
+        ),
+        "hashtags": _hashtags(metadata, body),
         "source_tags": _source_tags(metadata),
         "like_count": _integer(metadata.get("likes")),
+        "comment_count": _integer(
+            _first_value(metadata, "comments", "comments_count", "comment_count")
+        ),
+        "view_count": _integer(
+            _first_value(metadata, "video_view_count", "views", "view_count")
+        ),
+        "play_count": _integer(_first_value(metadata, "play_count", "plays")),
         "pinned": metadata.get("pinned"),
         "coauthors": metadata.get("coauthors") or [],
         "location": location,
@@ -272,6 +312,17 @@ def _has_value(value: Any) -> bool:
     return value not in (None, "", [], {})
 
 
+def _upgrade_post_schema(post: dict[str, Any]) -> dict[str, Any]:
+    """Backfill content fields when merging records created by schema v1."""
+    result = deepcopy(post)
+    body = _text(result.get("body")) or _text(result.get("caption")) or ""
+    result["schema_version"] = SCHEMA_VERSION
+    result["body"] = body
+    result["caption"] = _text(result.get("caption")) or body
+    result["title"] = _text(result.get("title")) or _content_title({}, body)
+    return result
+
+
 def _media_identity(media: dict[str, Any]) -> str:
     if value := _text(media.get("media_id")):
         return f"id:{value}"
@@ -331,12 +382,16 @@ def merge_posts(
     With ``preserve_missing``, incomplete current records are overlaid on the
     previous version instead of erasing fields and media that were not returned.
     """
-    old = {record_key(post): post for post in previous}
+    old: dict[str, dict[str, Any]] = {}
+    for post in previous:
+        upgraded = _upgrade_post_schema(post)
+        old[record_key(upgraded)] = upgraded
     merged: list[dict[str, Any]] = []
     seen: set[str] = set()
     new_count = 0
 
-    for post in current:
+    for raw_post in current:
+        post = _upgrade_post_schema(raw_post)
         key = record_key(post)
         if key not in old:
             new_count += 1

@@ -64,7 +64,7 @@ Instagram 通常要求有效登录会话。先在自己的浏览器中正常登�
 
 - 发布日期起止，两端都包含；当前按帖子 UTC 日期判断；
 - 最低和最高点赞数，两端都包含；
-- 文案关键词，支持“任一”或“全部”，忽略大小写并做 Unicode 归一化；
+- 标题/正文关键词，支持“任一”或“全部”，忽略大小写并做 Unicode 归一化；
 - Hashtag，支持“任一”或“全部”，`#` 可省略，按完整标签忽略大小写匹配；
 - 媒体类型：全部、包含图片、包含视频；混合轮播可以同时命中图片和视频；
 - 筛选后最多保留的结果数；随机模式会先筛选再打散并截断，指定目标模式会优先保留发布时间较新的结果。
@@ -154,30 +154,38 @@ ins-posts --help
 
 - `extracted.jsonl`：本次扫描到的全部候选，筛选前；
 - `current.jsonl`：本次筛选命中的结果，最适合页面展示或后续处理；
+- `current.csv`：本次筛选结果的表格版，带 UTF-8 BOM，可在 Windows 上双击查看“标题”和“正文”列；
 - `posts.jsonl`：该目录下历次命中结果的增量库，按帖子 ID 更新并保留历史；
+- `posts.csv`：历次命中结果的表格版，同样适合 Excel、WPS 或记事本直接查看；
 - `run.json`：本次模式、筛选配置、扫描/命中数量、认证方式和错误摘要，不含 Cookie；随机模式还记录抽样策略、种子和实际使用的来源；
 - `media/`：使用 `--download-media` 时生成；始终只下载本次 `current.jsonl` 中帖子的全部媒体；
 - `media-archive.txt`：已下载媒体 ID，用于避免重复下载；
 - `gallery-dl-cache.sqlite3`：当前输出目录专用的上游缓存；
 - `raw-events.json`：仅在使用 `--keep-raw` 时生成，用于排错。
 
-如果在同一个命令行输出目录更换筛选条件，`posts.jsonl` 仍会保留此前条件命中的历史；本次精确结果请读取 `current.jsonl`。网页界面每次使用独立任务目录，不会混淆条件。
+如果只是人工查看，请优先打开 `current.csv`；它使用带 BOM 的 UTF-8 编码，可避免部分 Windows 软件把中文识别为乱码。`jsonl` 文件保留标准 UTF-8 编码，供程序读取。若在同一个命令行输出目录更换筛选条件，`posts.jsonl` 和 `posts.csv` 仍会保留此前条件命中的历史；本次精确结果请读取 `current.jsonl` 或 `current.csv`。网页界面每次使用独立任务目录，不会混淆条件。
 
 `current.jsonl` 每行的核心结构：
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "platform": "instagram",
   "post_id": "...",
   "shortcode": "...",
   "post_url": "https://www.instagram.com/p/.../",
   "username": "...",
   "published_at": "2026-08-30T12:34:56Z",
+  "title": "从上游标题或正文首句生成的标题",
+  "body": "帖子完整正文，保留换行",
   "caption": "...",
+  "accessibility_text": "上游返回的图片辅助说明或 null",
   "hashtags": ["#example"],
   "source_tags": ["photography"],
   "like_count": 123,
+  "comment_count": 12,
+  "view_count": 345,
+  "play_count": 456,
   "media": [
     {
       "media_id": "...",
@@ -189,6 +197,8 @@ ins-posts --help
   ]
 }
 ```
+
+Instagram 通常没有独立标题字段：上游若返回 `title`/`headline` 就直接使用，否则程序会从正文第一行的首句生成最多 120 字的 `title`。`body` 保存完整正文，`caption` 与正文保持一致以兼容旧版读取程序。评论、浏览和播放计数仅在 Instagram 实际返回时有值，否则为 `null`。
 
 媒体 CDN URL 通常会过期；需要长期保存时，请在取得授权的前提下使用 `--download-media`。
 

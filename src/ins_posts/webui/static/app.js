@@ -391,6 +391,9 @@
     meta.className = "result-meta";
     appendTextElement(meta, "span", "", formatDate(post.published_at));
     appendTextElement(meta, "span", "", formatNumber(post.like_count));
+    if (post.username) {
+      appendTextElement(meta, "span", "result-author", `@${post.username}`);
+    }
     if (post.location && typeof post.location === "object") {
       const location = post.location.slug || post.location.id;
       if (location) {
@@ -399,7 +402,7 @@
     }
     content.append(meta);
 
-    const titleText = post.username ? `@${post.username}` : post.shortcode || "Instagram 帖子";
+    const titleText = post.title || post.shortcode || "Instagram 帖子";
     const postUrl = safeInstagramUrl(post.post_url);
     if (postUrl) {
       const title = appendTextElement(content, "a", "result-title", titleText);
@@ -409,7 +412,15 @@
     } else {
       appendTextElement(content, "span", "result-title", titleText);
     }
-    appendTextElement(content, "p", "caption", post.caption || "无文案");
+    const bodyText = post.body || post.caption || "";
+    appendTextElement(content, "p", "caption", bodyText || "无正文");
+    if (bodyText.length > 160) {
+      const bodyDetails = document.createElement("details");
+      bodyDetails.className = "body-details";
+      appendTextElement(bodyDetails, "summary", "", "展开完整正文");
+      appendTextElement(bodyDetails, "p", "body-full", bodyText);
+      content.append(bodyDetails);
+    }
 
     const tags = document.createElement("div");
     tags.className = "tag-list";
